@@ -1,0 +1,60 @@
+#old
+epochs = 40
+batch_size = 4
+neurons = 64
+drop = 0.3
+learnign rate = 0.0001
+loss similar for 10 epochs, then diverges
+accuracy peaks, then goes down
+
+#17/05
+b=16
+neurons=64(128 also works)
+drop=0.1
+lr = 0.0002, amsgrad
+2 lstm layers(1 also works?)
+regular split on active/normal, then combined, shuffled
+random at start, after epoch 10-30 starts slowly decreasing loss for both val/train
+
+
+
+Stations:
+{'TSZ': 477, 'KHZ': 165, 'PXZ': 754, 'MRZ': 1403, 'NNZ': 626, 'VRZ': 701, 'MSZ': 87,
+ 'MQZ': 595, 'RPZ': 34, 'BKZ': 984, 'PUZ': 241, 'OPRZ': 612, 'KNZ': 485, 'THZ': 110,
+ 'BFZ': 358, 'MWZ': 208, 'DCZ': 126, 'LBZ': 34, 'QRZ': 86, 'MLZ': 13, 'URZ': 154,
+ '': 625, 'DSZ': 52, 'HIZ': 95, 'WIZ': 457, 'MXZ': 214, 'WVZ': 74, 'LTZ': 67, 'WKZ': 28,
+ 'TOZ': 48, 'ODZ': 14, 'JCZ': 47, 'KUZ': 19, 'SYZ': 1, 'WHZ': 5, 'EAZ': 1}
+
+MRZ - 0.5767
+BKZ - 0.53
+PXZ - 0.6308
+OPRZ - 0.5889
+VRZ - 0.5250
+TSZ - 0.5440
+
+
+
+AFTER norm fix
+10k, ['KHZ', 'MRZ', 'PXZ', 'OPRZ'] -> 0.603
+
+More data
+{'TSZ': 975, 'KHZ': 6049, 'PXZ': 1532, 'MRZ': 2272, 'NNZ': 3923, 'MSZ': 163, 'MQZ': 780, 'RPZ': 68,
+ 'BKZ': 1930, 'VRZ': 1221, 'PUZ': 659, 'KNZ': 910, 'THZ': 274, 'BFZ': 864, 'MWZ': 371, 'DCZ': 221,
+  'LBZ': 72, 'QRZ': 144, 'MLZ': 30, 'DSZ': 94, 'HIZ': 180, '': 1226, 'WIZ': 810, 'OPRZ': 386,
+   'URZ': 259, 'MXZ': 1730, 'WVZ': 179, 'LTZ': 837, 'WKZ': 51, 'TOZ': 89, 'ODZ': 37, 'JCZ': 78,
+    'KUZ': 38, 'SYZ': 3, 'WHZ': 7, 'EAZ': 2, 'TUZ': 1, 'WCZ': 2}
+
+MRZ: 0.5592
+BKZ - 0.5640
+KHZ: 0.6314
+NNZ: 0.5882
+MXZ: 0.6854
+VRZ: 0.6136
+PXZ: 0.5780
+TSZ: 0.5424
+MQZ: 0.5221
+KNZ: 0.5343
+LTZ: 0.5161
+WIZ: 0.6136
+BFZ: 0.5925
+PUZ: 0.6213

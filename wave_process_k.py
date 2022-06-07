@@ -48,7 +48,7 @@ def combine_all(normal, active, depth_class=None):
     same = min(len(normal), len(active))
     return pd.concat([active[:same], normal[:same]])
 
-def combine_deep_shallow(normal, active):
+def combine_deep_shallow(normal, active, shuffle=False):
     events = pd.read_pickle('data/events_processed.pkl')
     #70
     deep_events = events[events['depth'] > 70]['event_id'].apply(lambda x: x.split('/')[1])
@@ -61,6 +61,10 @@ def combine_deep_shallow(normal, active):
     shallow = active[active['label'] == 1]
     deep = active[active['label'] == 0]
     deep['label'] = 1
+
+    if shuffle:
+        shallow = shallow.sample(frac=1)
+        deep = deep.sample(frac=1)
 
     print(f"shallow: {shallow.shape[0]}, deep: {deep.shape[0]}")
     same = min(shallow.shape[0], deep.shape[0])
@@ -81,6 +85,8 @@ def normalize_scale(df):
     #scale = StandardScaler()
     #scale.fit(df.values.flatten().tolist())
     #df = df.apply(lambda x: x.apply(lambda y: scale.transform(y.reshape(1, -1))[0]))
+
+    df = df.applymap(lambda x: x[::2])
     df['label'] = temp
     return df
 
@@ -94,23 +100,17 @@ def process():
 
 def deep_shallow_process(shallow_loc='./datasets/sets/dataset_shallow.pkl', deep_loc='./datasets/sets/dataset_deep.pkl'):
     active = sanitize(pd.read_pickle('./datasets/active/waves_full.pkl'), 30)
+    #active = active.apply(lambda row: row[::2], axis=1)
     normal = sanitize(pd.read_pickle('./datasets/normal/waves_full.pkl'), 30)
+    #normal = normal.apply(lambda row: row[::2], axis=1)
 
     #dataset_shallow = combine_all(normal, active, depth_class='shallow')
     #dataset_deep = combine_all(normal, active, depth_class='deep')
-    active = active[10000:]
-    dataset_shallow, dataset_deep = combine_deep_shallow(normal, active)
+    #active = active[10000:]
+    dataset_shallow, dataset_deep = combine_deep_shallow(normal, active, shuffle=True)
 
     dataset_shallow = normalize_scale(dataset_shallow)
     dataset_deep = normalize_scale(dataset_deep)
-
-    #normalize sizes
-    #deep_n = dataset_deep.shape[0]
-    #shallow_n = dataset_shallow.shape[0]
-    #if deep_n > shallow_n:
-    #    dataset_deep = dataset_deep.head(shallow_n)
-    #if deep_n < shallow_n:
-    #    dataset_shallow = shallow_n.head(deep_n)
 
     #print(f"final sizes of {dataset_shallow.shape[0]}")
 
@@ -118,6 +118,6 @@ def deep_shallow_process(shallow_loc='./datasets/sets/dataset_shallow.pkl', deep
     dataset_shallow.to_pickle(shallow_loc)
 
 if __name__ == "__main__":
-    process()
+    deep_shallow_process()
 
 

@@ -5,17 +5,20 @@ import matplotlib.pyplot as plt
 import os
 import math, scipy
 import skimage
+from keras import activations
 from keras.regularizers import l2
 from scipy import signal
 from keras.models import load_model
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 from scipy.interpolate import interp1d
 from skimage.measure import block_reduce
 
 epochs = 30
-batch_size = 16 # 4 # 64
-neurons = 64
-dropout_rate = 0.0 #0.6
+batch_size = 32 # 4 # 64
+neurons = 16
+dropout_rate = 0.1 #0.6
 layers = 1
 learning_rate = 0.001
 checkpoint_path = "best_lstm_model.h5"
@@ -39,6 +42,18 @@ def load_data():
 
     print(np.min(x_test))
 
+    return x_train, y_train, x_test, y_test
+
+def load_data_from_df(location):
+    df = pd.read_pickle(location)
+    labels = df['label']
+    print(len(labels))
+    df = df.drop(columns=['label'])
+    df = df.applymap(lambda x: np.array(x))
+    arr = np.array(df.to_numpy().tolist())
+    print(arr.shape)
+    #np.random.shuffle(arr)
+    x_train, x_test, y_train, y_test = train_test_split(arr, labels, test_size=0.20, random_state=42)
     return x_train, y_train, x_test, y_test
 
 def evaluate_metrics(model, x_test, y_test):
@@ -101,23 +116,20 @@ def plot_loss(history, metric="loss"):
 
 
 @tf.autograph.experimental.do_not_convert
-def lstm_model(input_shape):
+def lstm_model(x_train, y_train, x_test, y_test, input_shape):
     print(input_shape)
 
     model = tf.keras.models.Sequential()
 
-    model.add(tf.keras.layers.Dropout(dropout_rate, input_shape=input_shape))  # avoids overfitting
+    #model.add(tf.keras.layers.Dropout(dropout_rate, input_shape=input_shape))  # avoids overfitting
 
     for _ in range(0,layers-1):
         model.add(tf.keras.layers.LSTM(neurons, return_sequences=True, kernel_initializer='random_normal'))
         model.add(tf.keras.layers.Dropout(dropout_rate)) # avoids overfitting
-    model.add(tf.keras.layers.LSTM(neurons, kernel_initializer='random_normal'))
-
+    model.add(tf.keras.layers.LSTM(neurons, activation="tanh", input_shape=input_shape))
+    model.add(tf.keras.layers.Dropout(dropout_rate, input_shape=input_shape))
 
     # output = 1, binary classification
-    #model.add(tf.keras.layers.Dense(512, input_shape=input_shape, activation='sigmoid', kernel_regularizer = l2(0.000)))
-    #model.add(tf.keras.layers.Dense(64, activation='sigmoid', kernel_regularizer = l2(0.000)))
-    #model.add(tf.keras.layers.Dropout(dropout_rate))
     model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
     model.compile(
@@ -149,9 +161,9 @@ def lstm_model(input_shape):
         batch_size=batch_size,
         epochs=epochs,
         callbacks=callbacks,
-        shuffle=False,
-        validation_data=(x_test, y_test),
-        #validation_split = 0.2,
+        shuffle=True,
+        #validation_data=(x_test, y_test),
+        validation_split = 0.1,
         verbose=1, # how to show progress bar
     )
 
@@ -184,13 +196,13 @@ def lower_hz(data):
     #print(out.shape)
     return out
 
-if __name__ == '__main__':
+def run_model(data_location="../datasets/sets/dataset_shallow.pkl"):
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
-            tf.config.set_logical_device_configuration(
-                gpus[0],
-                [tf.config.LogicalDeviceConfiguration(memory_limit=4096)])
+            pass
+            #tf.config.set_logical_device_configuration(gpus[0],
+            #    [tf.config.LogicalDeviceConfiguration(memory_limit=4096)])
         except RuntimeError as e:
             pass
 
@@ -198,25 +210,26 @@ if __name__ == '__main__':
     tf.autograph.set_verbosity(0)
 
     # load data
-    x_train, y_train, x_test, y_test = load_data()
-    #x_train = x_train.transpose((0,2,1))
-    #x_test = x_test.transpose((0,2,1))
-    #print(x_train.shape)
-    #x_train = lower_hz(x_train)
-    #x_test = lower_hz(x_test)
-    #x_train = x_train.reshape(x_train.shape[0],x_train.shape[1]*x_train.shape[2])
-    #x_test = x_test.reshape(x_test.shape[0], x_test.shape[1] * x_test.shape[2])
+    #x_train, y_train, x_test, y_test = load_data()
+    x_train, y_train, x_test, y_test = load_data_from_df(data_location)
+
+    # x_train = x_train.transpose((0,2,1))
+    # x_test = x_test.transpose((0,2,1))
+    # print(x_train.shape)
+    # x_train = lower_hz(x_train)
+    # x_test = lower_hz(x_test)
+    # x_train = x_train.reshape(x_train.shape[0],x_train.shape[1]*x_train.shape[2])
+    # x_test = x_test.reshape(x_test.shape[0], x_test.shape[1] * x_test.shape[2])
 
     print(x_train.shape)
 
     # create model - input_shape = (61, 58)
-    model, history = lstm_model(input_shape=(x_train.shape[1:]))
-    #model = load_model(checkpoint_path)
+    model, history = lstm_model(x_train, y_train, x_test, y_test, input_shape=(x_train.shape[1:]))
+    # model = load_model(checkpoint_path)
 
     # test model
     train_loss, train_acc = model.evaluate(x_train, y_train)
     test_loss, test_acc = model.evaluate(x_test, y_test)
-
 
     # evaluation metrics
     evaluate_metrics(model, x_test, y_test)
@@ -224,6 +237,9 @@ if __name__ == '__main__':
     # plot metrics
     plot_loss(history)
     plot_accuracy(history)
+
+if __name__ == '__main__':
+    run_model()
 
 
 

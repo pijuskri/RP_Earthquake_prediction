@@ -13,25 +13,27 @@ import numpy as np
 from scipy.interpolate import make_interp_spline, BSpline, interp1d
 from torchmetrics.functional import precision_recall
 
-from lstm_dataset_k import TimeSeriesDataset, DownSample, LSTM, device, LossCounter
+from lstm_dataset_k import TimeSeriesDataset, DownSample, LSTM, device, LossCounter, data_size
 
 # Training parameters
-n_epochs = 30 #100
-batch_size = 32
+n_epochs = 50 #100
+batch_size = 32#32
 test_size = 0.2
 valid_size = 0.1
-down_sample = 2
+down_sample = 1 #2
 learning_rate = 0.001 #0.001
 
 # Model parameters
-input_size = ceil(3000 / down_sample)
-hidden_size = 4 #2
+input_size = ceil(data_size / down_sample)
+hidden_size = 16
 num_classes = 1
 num_layers = 1
 shuffle = True
 random_state = 42
 
-def run(input_file='./datasets/sets/dataset.pkl', dataset=None, report_log=True, print_to_console=False):
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+def run(input_file='./datasets/sets/dataset.pkl', dataset=None, report_log=True, print_to_console=True):
     log_dir = "./runs/" + datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     writer = SummaryWriter(log_dir)
     # TODO shuffle (time-series), k-fold, sort based on time, trim recording
@@ -53,6 +55,8 @@ def run(input_file='./datasets/sets/dataset.pkl', dataset=None, report_log=True,
 
     # 1) Create model, loss and optimizer
     model = LSTM(input_size, hidden_size, num_classes, num_layers).to(device)
+    #pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    #print(pytorch_total_params)
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     writer.add_graph(model, iter(test_loader).next()[0])
@@ -173,7 +177,7 @@ def plot_figure(df, metric):
     plt.ylabel(metric, fontsize="large")
     plt.xlabel("Total Number of Epochs", fontsize="large")
     plt.legend(["train", "val"], loc="best")
-    plt.ylim(50, )
+    #plt.ylim(50, 100)
     plt.show()
     plt.close()
 

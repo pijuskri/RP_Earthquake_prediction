@@ -14,6 +14,7 @@ from scipy.interpolate import make_interp_spline, BSpline, interp1d
 from torchmetrics.functional import precision_recall
 
 from lstm_dataset_k import TimeSeriesDataset, DownSample, LSTM, device, LossCounter, data_size
+from torchsummary import summary
 
 # Training parameters
 n_epochs = 50 #100
@@ -60,6 +61,7 @@ def run(input_file='./datasets/sets/dataset.pkl', dataset=None, report_log=True,
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     writer.add_graph(model, iter(test_loader).next()[0])
+    #print(summary(model, input_size=(28, 1500)))
 
     # 2) Training loop
     n_total_steps = len(train_loader)

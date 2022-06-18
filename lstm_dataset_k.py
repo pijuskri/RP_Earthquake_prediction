@@ -21,7 +21,7 @@ class LSTM(nn.Module):
         self.hidden_size = hidden_size
         self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True, dropout=0.1)
         #self.fc_1 = nn.Linear(hidden_size, 128)
-        self.drop = nn.Dropout(p=0.1)
+        self.drop = nn.Dropout(p=0.0)
         self.fc_1 = nn.Linear(hidden_size, num_classes) #
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()

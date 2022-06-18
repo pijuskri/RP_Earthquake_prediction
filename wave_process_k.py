@@ -35,15 +35,13 @@ def combine_data(normal, active, low, high, flat):
     print(f'IDX: {idx}, Low events: {len(active_low)}, High events: {len(active_high)}, Normal events: {len(normal)}')
     return pd.concat([active_low[:floor(idx * low)], active_high[:floor(idx * high)], normal[:floor(idx * flat)]])
 
-def combine_all(normal, active, depth_class=None):
+def combine_all(normal, active):
     events = pd.read_pickle('data/events_processed.pkl')
-    deep = events[events['depth'] > 70000]['event_id'].apply(lambda x: x.split('/')[1])
     normal['label'] = 0
     active['label'] = 1
-    if depth_class == 'deep':
-        active = active[active['event_id'] in list(deep)]
-    elif depth_class == 'shallow':
-        active = active[active['event_id'] not in list(deep)]
+
+    normal = normal.sample(frac=1)
+    active = active.sample(frac=1)
 
     same = min(len(normal), len(active))
     return pd.concat([active[:same], normal[:same]])
@@ -93,7 +91,6 @@ def normalize_scale(df):
 def process():
     active = sanitize(pd.read_pickle('./datasets/active/waves_full.pkl'), 30)
     normal = sanitize(pd.read_pickle('./datasets/normal/waves_full.pkl'), 30)
-    #dataset = combine_data(normal, active, low=0.5, high=0.0, flat=0.5)
     dataset = combine_all(normal, active)
     dataset = normalize_scale(dataset)
     dataset.to_pickle('./datasets/sets/dataset.pkl')
@@ -107,15 +104,18 @@ def deep_shallow_process(shallow_loc='./datasets/sets/dataset_shallow.pkl', deep
     #dataset_shallow = combine_all(normal, active, depth_class='shallow')
     #dataset_deep = combine_all(normal, active, depth_class='deep')
     #active = active[10000:]
-    dataset_shallow, dataset_deep = combine_deep_shallow(normal, active, shuffle=True)
+    dataset_shallow, dataset_deep = combine_deep_shallow(normal, active, shuffle=False)
+    del active
+    del normal
 
     dataset_shallow = normalize_scale(dataset_shallow)
-    dataset_deep = normalize_scale(dataset_deep)
-
-    #print(f"final sizes of {dataset_shallow.shape[0]}")
-
-    dataset_deep.to_pickle(deep_loc)
     dataset_shallow.to_pickle(shallow_loc)
+    del dataset_shallow
+
+    dataset_deep = normalize_scale(dataset_deep)
+    dataset_deep.to_pickle(deep_loc)
+    del dataset_deep
+
 
 if __name__ == "__main__":
     deep_shallow_process()
